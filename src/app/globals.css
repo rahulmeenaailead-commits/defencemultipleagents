@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #07090d;
+  --color-panel: #0d1117;
+  --color-panel-2: #131923;
+  --color-border: #1f2937;
+  --color-fg: #e5e7eb;
+  --color-fg-muted: #9aa3b2;
+  --color-fg-dim: #6b7280;
+  --color-accent: #60a5fa;
+  --color-accent-2: #38bdf8;
+  --color-low: #38bdf8;
+  --color-medium: #fbbf24;
+  --color-high: #f97316;
+  --color-critical: #ef4444;
+  --color-ok: #22c55e;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(96, 165, 250, 0.35);
+}
+
+mark.dcr-mark {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fecaca;
+  padding: 1px 2px;
+  border-bottom: 1px dashed rgba(239, 68, 68, 0.6);
+  border-radius: 2px;
+}
+mark.dcr-mark-active {
+  background: rgba(251, 191, 36, 0.35);
+  color: #fde68a;
+  border-bottom: 1px solid rgba(251, 191, 36, 0.9);
+}
+
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: #1f2937;
+  border-radius: 4px;
+}
+.scroll-thin::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.dot-pulse {
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(31, 41, 55, 0.4) 0%,
+    rgba(55, 65, 81, 0.7) 50%,
+    rgba(31, 41, 55, 0.4) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
