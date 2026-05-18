@@ -66,10 +66,10 @@ export function ProofPanel({ finding }: { finding: RiskFinding | null }) {
         }
       />
 
-      <section>
-        <h3 className="text-[10px] font-mono uppercase tracking-wider text-slate-500">
-          Audit trail
-        </h3>
+      <details className="group">
+        <summary className="cursor-pointer text-[10px] font-mono uppercase tracking-wider text-slate-500 hover:text-slate-300">
+          Provenance &amp; audit trail
+        </summary>
         <dl className="mt-2 space-y-1 rounded border border-slate-800 bg-slate-900/40 p-3 font-mono text-[11px] text-slate-300">
           <Row k="findingId" v={finding.findingId} />
           <Row k="passType" v={finding.provenance.passType} />
@@ -80,7 +80,7 @@ export function ProofPanel({ finding }: { finding: RiskFinding | null }) {
             <Row k="relatedClauseIds" v={finding.provenance.relatedClauseIds.join(", ")} />
           )}
         </dl>
-      </section>
+      </details>
     </aside>
   );
 }
