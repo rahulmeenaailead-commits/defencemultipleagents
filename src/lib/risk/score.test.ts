@@ -28,7 +28,7 @@ function r(findings: { verified?: RiskFinding[]; crossRef?: RiskFinding[]; hidde
     verifiedFindings: findings.verified ?? [],
     crossRefFindings: findings.crossRef ?? [],
     hiddenFindings: findings.hidden ?? [],
-    rejectedFindings: [], errors: [], elapsedMs: 0, providerId: "stub",
+    rejectedFindings: [], errors: [], elapsedMs: 0, providerId: "stub", timedOut: false,
   } as AnalysisResult;
 }
 
