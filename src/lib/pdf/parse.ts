@@ -11,5 +11,9 @@ export type ParsedPdf = {
 
 export async function parsePdf(buf: Buffer): Promise<ParsedPdf> {
   const data = await pdfParse(buf);
-  return { text: data.text, numPages: data.numpages };
+  return { text: dewrapHyphens(data.text), numPages: data.numpages };
+}
+
+function dewrapHyphens(text: string): string {
+  return text.replace(/(\w)-\s*\n\s*(\w)/g, "$1$2");
 }

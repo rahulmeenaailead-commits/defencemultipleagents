@@ -15,6 +15,26 @@ export function UploadDropzone() {
     async (file: File) => {
       setStatus("uploading");
       setError(null);
+
+      const isPdfByType = file.type === "application/pdf";
+      const isPdfByExt = file.name.toLowerCase().endsWith(".pdf");
+      if (!isPdfByType && !isPdfByExt) {
+        setStatus("error");
+        setError(`"${file.name}" doesn't look like a PDF. Only .pdf files are supported.`);
+        return;
+      }
+      if (file.size === 0) {
+        setStatus("error");
+        setError("That file is empty (0 bytes).");
+        return;
+      }
+      const MAX_MB = 25;
+      if (file.size > MAX_MB * 1024 * 1024) {
+        setStatus("error");
+        setError(`File is ${(file.size / 1024 / 1024).toFixed(1)} MB. Max is ${MAX_MB} MB.`);
+        return;
+      }
+
       const form = new FormData();
       form.append("file", file);
       try {
@@ -28,7 +48,14 @@ export function UploadDropzone() {
         router.push(`/analysis/${j.jobId}`);
       } catch (e) {
         setStatus("error");
-        setError((e as Error).message);
+        const msg = (e as Error).message;
+        if (msg === "Failed to fetch" || msg.includes("NetworkError")) {
+          setError(
+            "Connection to the analyzer failed. The dev server may have crashed, or the PDF triggered a parser error. Check the terminal running `npm run dev`, then try again.",
+          );
+        } else {
+          setError(msg);
+        }
       }
     },
     [router],
@@ -135,7 +162,7 @@ export function UploadDropzone() {
                 </button>
               </p>
               <p className="text-xs text-slate-500">
-                Text-based PDFs only. Stays in memory — never written to disk.
+                Text-based PDFs, up to 25 MB. Stays in memory — never written to disk.
               </p>
             </>
           )}

@@ -13,6 +13,10 @@ import type { AnalysisResult } from "@/lib/schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
+
+const MAX_PDF_BYTES = 25 * 1024 * 1024; // 25 MB
+const MIN_TEXT_CHARS = 1;
 
 export async function POST(req: Request) {
   const started = Date.now();
@@ -31,20 +35,46 @@ export async function POST(req: Request) {
           { status: 400 },
         );
       }
+      if (file.size === 0) {
+        return NextResponse.json({ error: "Uploaded file is empty (0 bytes)." }, { status: 400 });
+      }
+      if (file.size > MAX_PDF_BYTES) {
+        return NextResponse.json(
+          {
+            error: `File is ${(file.size / 1024 / 1024).toFixed(1)} MB. Max is ${MAX_PDF_BYTES / 1024 / 1024} MB.`,
+          },
+          { status: 413 },
+        );
+      }
       documentTitle = file.name || documentTitle;
       const buf = Buffer.from(await file.arrayBuffer());
       try {
         const parsed = await parsePdf(buf);
-        documentText = parsed.text;
-      } catch {
+        documentText = parsed.text ?? "";
+      } catch (e) {
+        const msg = (e as Error).message || "unknown error";
+        const looksEncrypted = /password|encrypt|PasswordException/i.test(msg);
+        if (looksEncrypted) {
+          return NextResponse.json(
+            {
+              error: "This PDF is password-protected. Remove the password and re-upload.",
+            },
+            { status: 400 },
+          );
+        }
         return NextResponse.json(
-          { error: "Could not parse PDF. Try a text-based (not scanned) PDF, or use the sample." },
+          {
+            error: `Could not parse PDF (${msg}). Try a text-based (not scanned) PDF, or use the sample.`,
+          },
           { status: 400 },
         );
       }
-      if (!documentText || documentText.trim().length < 50) {
+      if (!documentText || documentText.trim().length < MIN_TEXT_CHARS) {
         return NextResponse.json(
-          { error: "Extracted text is too short. Image-only PDFs are not supported in this demo." },
+          {
+            error:
+              "No readable text in this PDF. It may be image-only/scanned or encrypted. Try a text-based PDF or use the sample.",
+          },
           { status: 400 },
         );
       }
@@ -76,14 +106,27 @@ export async function POST(req: Request) {
 
   if (clauses.length === 0) {
     return NextResponse.json(
-      { error: "Could not segment any clauses from this document." },
+      {
+        error:
+          "Could not segment any clauses from this document. The text may be empty after extraction.",
+      },
       { status: 400 },
     );
   }
 
-  const pass1 = await runPerClauseExtraction({ jobId, provider, clauses, concurrency: 6 });
-  const pass2 = await runCrossRefPass({ jobId, provider, clauses, concurrency: 4 });
-  const pass3 = await runHiddenPass({ jobId, provider, clauses });
+  let pass1, pass2, pass3;
+  try {
+    pass1 = await runPerClauseExtraction({ jobId, provider, clauses, concurrency: 6 });
+    pass2 = await runCrossRefPass({ jobId, provider, clauses, concurrency: 4 });
+    pass3 = await runHiddenPass({ jobId, provider, clauses });
+  } catch (e) {
+    return NextResponse.json(
+      {
+        error: `Analysis pipeline failed: ${(e as Error).message || "unknown error"}. The document was read but the analyzer couldn't process it.`,
+      },
+      { status: 500 },
+    );
+  }
 
   const errors = [...pass1.errors, ...pass2.errors, ...pass3.errors];
   if (clauses.length === 1 && documentText.length > 20000) {
