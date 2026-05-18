@@ -44,7 +44,7 @@ export function UploadDropzone() {
           throw new Error(j.error ?? `HTTP ${resp.status}`);
         }
         const j = (await resp.json()) as { jobId: string };
-        sessionStorage.setItem(`dcr:${j.jobId}`, "ready");
+        sessionStorage.setItem(`dcr:${j.jobId}`, JSON.stringify(j));
         router.push(`/analysis/${j.jobId}`);
       } catch (e) {
         setStatus("error");
@@ -75,7 +75,7 @@ export function UploadDropzone() {
         throw new Error(j.error ?? `HTTP ${resp.status}`);
       }
       const j = (await resp.json()) as { jobId: string };
-      sessionStorage.setItem(`dcr:${j.jobId}`, "ready");
+      sessionStorage.setItem(`dcr:${j.jobId}`, JSON.stringify(j));
       router.push(`/analysis/${j.jobId}`);
     } catch (e) {
       setStatus("error");
