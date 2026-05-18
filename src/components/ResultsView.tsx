@@ -1,41 +1,28 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import type { AnalysisResult, RiskFinding } from "@/lib/schema";
-import { ClauseList } from "./ClauseList";
-import { ClauseDetail } from "./ClauseDetail";
-import { ProofPanel } from "./ProofPanel";
-import { RejectedDrawer } from "./RejectedDrawer";
 import clsx from "clsx";
+import type { AnalysisResult } from "@/lib/schema";
+import { ContractorSummary } from "./ContractorSummary";
+import { AllClausesView } from "./AllClausesView";
+import { ExpertView } from "./ExpertView";
 
-type Tab = "PER_CLAUSE" | "CROSS_REF" | "HIDDEN";
+type TopTab = "SUMMARY" | "ALL" | "TECHNICAL";
 
-const TABS: Array<{ id: Tab; label: string }> = [
-  { id: "PER_CLAUSE", label: "Per-clause" },
-  { id: "CROSS_REF", label: "Cross-reference" },
-  { id: "HIDDEN", label: "Hidden risks" },
+const TABS: Array<{ id: TopTab; label: string }> = [
+  { id: "SUMMARY", label: "Summary" },
+  { id: "ALL", label: "All clauses" },
+  { id: "TECHNICAL", label: "Technical" },
 ];
 
 export function ResultsView({ result }: { result: AnalysisResult }) {
-  const [activeClauseId, setActiveClauseId] = useState<string | null>(
-    result.clauses[0]?.clauseId ?? null,
-  );
-  const [activeFinding, setActiveFinding] = useState<RiskFinding | null>(null);
-  const [tab, setTab] = useState<Tab>("PER_CLAUSE");
-  const [rejectedOpen, setRejectedOpen] = useState(false);
+  const [tab, setTab] = useState<TopTab>("SUMMARY");
 
-  const activeClause = useMemo(
-    () => result.clauses.find((c) => c.clauseId === activeClauseId) ?? null,
-    [result.clauses, activeClauseId],
-  );
-
-  const counts = {
-    PER_CLAUSE: result.verifiedFindings.length,
-    CROSS_REF: result.crossRefFindings.length,
-    HIDDEN: result.hiddenFindings.length,
-  };
-  const totalFindings = counts.PER_CLAUSE + counts.CROSS_REF + counts.HIDDEN;
+  const totalFindings =
+    result.verifiedFindings.length +
+    result.crossRefFindings.length +
+    result.hiddenFindings.length;
   const isStub = result.providerId === "stub";
   const isSampleDoc = result.documentTitle.toLowerCase().includes("sample");
   const showStubBanner = isStub && (totalFindings === 0 || !isSampleDoc);
@@ -44,35 +31,15 @@ export function ResultsView({ result }: { result: AnalysisResult }) {
 
   return (
     <div className="flex h-screen w-full flex-col">
-      <TopBar result={result} tab={tab} counts={counts} onTab={(t) => { setTab(t); setRejectedOpen(false); }} />
+      <TopBar result={result} tab={tab} onTab={setTab} />
       {hasErrors && <ErrorBanner errors={result.errors} docNotSegmented={!!docNotSegmented} />}
       {showStubBanner && <StubBanner totalFindings={totalFindings} />}
-      <div className="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)_360px]">
-        <ClauseList
-          result={result}
-          activeClauseId={activeClauseId}
-          onSelect={(id) => {
-            setActiveClauseId(id);
-            setActiveFinding(null);
-            setRejectedOpen(false);
-          }}
-          onShowRejected={() => setRejectedOpen((v) => !v)}
-          rejectedOpen={rejectedOpen}
-        />
-        {rejectedOpen ? (
-          <RejectedDrawer rejected={result.rejectedFindings} />
-        ) : activeClause ? (
-          <ClauseDetail
-            result={result}
-            clause={activeClause}
-            activeTab={tab}
-            activeFindingId={activeFinding?.findingId ?? null}
-            onSelectFinding={setActiveFinding}
-          />
-        ) : (
-          <div className="p-6 text-slate-500">Select a clause.</div>
+      <div className="flex min-h-0 flex-1 flex-col">
+        {tab === "SUMMARY" && (
+          <ContractorSummary result={result} onOpenTechnical={() => setTab("TECHNICAL")} />
         )}
-        <ProofPanel finding={rejectedOpen ? null : activeFinding} />
+        {tab === "ALL" && <AllClausesView result={result} />}
+        {tab === "TECHNICAL" && <ExpertView result={result} />}
       </div>
     </div>
   );
@@ -178,13 +145,11 @@ function StubBanner({ totalFindings }: { totalFindings: number }) {
 function TopBar({
   result,
   tab,
-  counts,
   onTab,
 }: {
   result: AnalysisResult;
-  tab: Tab;
-  counts: Record<Tab, number>;
-  onTab: (t: Tab) => void;
+  tab: TopTab;
+  onTab: (t: TopTab) => void;
 }) {
   return (
     <header className="flex shrink-0 items-center gap-4 border-b border-slate-800 bg-[var(--color-panel-2)] px-5 py-2.5">
@@ -196,8 +161,7 @@ function TopBar({
       <div className="min-w-0 flex-1 truncate text-sm text-slate-300">
         {result.documentTitle}
         <span className="ml-2 font-mono text-[11px] text-slate-500">
-          {result.documentChars.toLocaleString()} ch · {result.clauses.length} clauses ·{" "}
-          {result.elapsedMs} ms · provider <b className="text-slate-300">{result.providerId}</b>
+          {result.clauses.length} clauses · reviewed in {(result.elapsedMs / 1000).toFixed(1)}s
         </span>
       </div>
       <nav className="flex items-center gap-1">
@@ -213,9 +177,6 @@ function TopBar({
             )}
           >
             {t.label}
-            <span className="ml-1.5 rounded bg-slate-900/70 px-1 font-mono text-[10px] text-slate-400">
-              {counts[t.id]}
-            </span>
           </button>
         ))}
       </nav>
