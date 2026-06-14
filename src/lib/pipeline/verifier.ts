@@ -44,6 +44,11 @@ function normalizeRawDraft(raw: unknown): unknown {
   if (typeof r.confidence === "number" && r.confidence > 1 && r.confidence <= 100) {
     r.confidence = r.confidence / 100;
   }
+  if (typeof r.confidence === "string") {
+    const m: Record<string, number> = { low: 0.5, medium: 0.7, high: 0.9, "very high": 0.95 };
+    const v = m[r.confidence.trim().toLowerCase()];
+    if (v !== undefined) r.confidence = v;
+  }
 
   if (typeof r.regulatoryCitation === "string") {
     r.regulatoryCitation = { citationId: r.regulatoryCitation };
